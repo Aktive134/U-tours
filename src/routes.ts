@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import tourRouter from "./features/tours/tours.routes";
 
 const router = Router() 
 
@@ -8,10 +9,13 @@ router.get("/", (
 ) => {
     res.status(200).json({
         message: "Service Running Ok", 
-        status: true, 
-        statusCode: 200, 
+        success: true,  
         data : []
     })
 });
+
+router.use(tourRouter);
+
+
 
 export default router
