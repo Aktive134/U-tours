@@ -6,7 +6,7 @@ const responses = {
     userCreated: "User added successfully",
     tourCreated: "Tour Created",
     toursAvailable: "Tour(s) retrieved successfully",
-    tourNotExist: "Tour does not exist",
+    DoesNotExist: "data does not exist or invalid ID",
     tourUpdated: "Tour updated successfuly",
     tourDeleted: "Tour successfully deleted",
     loginSuccess: "Login successfully",
