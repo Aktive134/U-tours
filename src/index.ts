@@ -6,7 +6,6 @@ import mongoose from 'mongoose';
 
 dotenv.config();
 app.listen(Configuration.serverPort , () => console.log(Constant.messages.serverUp));
-console.log(app.get('env'))
 
 mongoose.connect(Configuration.Database.url).then(() => {
     console.log('connected to mongoDb');

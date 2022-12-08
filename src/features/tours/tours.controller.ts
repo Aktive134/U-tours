@@ -17,7 +17,7 @@ class TourController {
         success: true,
       });
     } catch (error: any) {
-      return next(new ApplicationError(error.messsage));
+      return next(new ApplicationError(error));
     }
   }
 
@@ -26,6 +26,7 @@ class TourController {
       const tours = await Tour.find({});
       res.status(200).json({
         message: Messages.toursAvailable,
+        result: tours.length,
         data: {
           tours,
         },
@@ -63,7 +64,7 @@ class TourController {
             name,
           },
         },
-        { new: true }
+        { new: true, runValidators: true }
       );
       res.status(200).json({
         message: Messages.tourUpdated,
