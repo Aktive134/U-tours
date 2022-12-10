@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import ApplicationError from '../../common/error-handler/ApplicationError';
 import Constant from '../../constant';
 import Tour from './tours.model';
+import QueryModifier from '../../lib/modify-query';
 
 const Messages = Constant.messages;
 class TourController {
@@ -23,7 +24,10 @@ class TourController {
 
   async getToursHandler(req: Request, res: Response, next: NextFunction) {
     try {
-      const tours = await Tour.find({});
+      const queryModify = new QueryModifier(Tour.find(), req.query);
+      const modifiedQuery = queryModify.filter().sort().limitFields().paginate();
+      const tours = await modifiedQuery.query;
+
       res.status(200).json({
         message: Messages.toursAvailable,
         result: tours.length,
@@ -59,11 +63,7 @@ class TourController {
       const { name } = req.body;
       const tour = await Tour.findByIdAndUpdate(
         id,
-        {
-          $set: {
-            name,
-          },
-        },
+        req.body,
         { new: true, runValidators: true }
       );
       res.status(200).json({
@@ -85,6 +85,38 @@ class TourController {
       res.status(204).json({
         message: Messages.tourDeleted,
         data: {},
+        success: true,
+      });
+    } catch (error: any) {
+      return next(new ApplicationError(error.message));
+    }
+  }
+
+  async getTourStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const stats = await Tour.aggregate([
+        {
+          $match: { ratingsAverage: { $gte: 4.0 } },
+        },
+        {
+          $group: {
+            _id: '$difficulty',
+            numTours: { $sum: 1},
+            numRatings: { $sum: '$ratingsQuantity'},
+            avgRating: { $avg: '$ratingsAverage' },
+            avgPrice: { $avg: '$price' },
+            minPrice: { $min: '$price' },
+            maxPrice: { $max: '$price' },
+          },
+        },
+        {
+          $sort: { avgPrice: 1}
+        }
+      ]);
+      res.status(200).json({
+        data: {
+          stats
+        },
         success: true,
       });
     } catch (error: any) {
