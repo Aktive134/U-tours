@@ -1,13 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import ApplicationError from '../../common/error-handler/ApplicationError';
+import catchAsync from '../../common/error-handler/catchAsyncError';
 import Constant from '../../constant';
 import Tour from './tours.model';
 import QueryModifier from '../../lib/modify-query';
 
 const Messages = Constant.messages;
 class TourController {
-  async createTourHandler(req: Request, res: Response, next: NextFunction) {
-    try {
+  createTourHandler = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
       const tour = new Tour(req.body);
       await tour.save();
       res.status(201).json({
@@ -17,15 +18,17 @@ class TourController {
         },
         success: true,
       });
-    } catch (error: any) {
-      return next(new ApplicationError(error));
     }
-  }
+  );
 
-  async getToursHandler(req: Request, res: Response, next: NextFunction) {
-    try {
+  getToursHandler = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
       const queryModify = new QueryModifier(Tour.find(), req.query);
-      const modifiedQuery = queryModify.filter().sort().limitFields().paginate();
+      const modifiedQuery = queryModify
+        .filter()
+        .sort()
+        .limitFields()
+        .paginate();
       const tours = await modifiedQuery.query;
 
       res.status(200).json({
@@ -36,13 +39,11 @@ class TourController {
         },
         success: true,
       });
-    } catch (error: any) {
-      return next(new ApplicationError(error.message));
     }
-  }
+  );
 
-  async getTourByIdHandler(req: Request, res: Response, next: NextFunction) {
-    try {
+  getTourByIdHandler = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
       const { id } = req.params;
       const tour = await Tour.findById({ _id: id });
       res.status(200).json({
@@ -52,20 +53,17 @@ class TourController {
         },
         success: true,
       });
-    } catch (error: any) {
-      return next(new ApplicationError(error.message));
     }
-  }
+  );
 
-  async editTourHandler(req: Request, res: Response, next: NextFunction) {
-    try {
+  editTourHandler = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
       const { id } = req.params;
       const { name } = req.body;
-      const tour = await Tour.findByIdAndUpdate(
-        id,
-        req.body,
-        { new: true, runValidators: true }
-      );
+      const tour = await Tour.findByIdAndUpdate(id, req.body, {
+        new: true,
+        runValidators: true,
+      });
       res.status(200).json({
         message: Messages.tourUpdated,
         data: {
@@ -73,13 +71,11 @@ class TourController {
         },
         success: true,
       });
-    } catch (error: any) {
-      return next(new ApplicationError(error.message));
     }
-  }
+  );
 
-  async deleteTourHandler(req: Request, res: Response, next: NextFunction) {
-    try {
+  deleteTourHandler = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
       const { id } = req.params;
       await Tour.findByIdAndDelete({ _id: id });
       res.status(204).json({
@@ -87,13 +83,11 @@ class TourController {
         data: {},
         success: true,
       });
-    } catch (error: any) {
-      return next(new ApplicationError(error.message));
     }
-  }
+  );
 
-  async getTourStats(req: Request, res: Response, next: NextFunction) {
-    try {
+  getTourStats = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
       const stats = await Tour.aggregate([
         {
           $match: { ratingsAverage: { $gte: 4.0 } },
@@ -101,8 +95,8 @@ class TourController {
         {
           $group: {
             _id: '$difficulty',
-            numTours: { $sum: 1},
-            numRatings: { $sum: '$ratingsQuantity'},
+            numTours: { $sum: 1 },
+            numRatings: { $sum: '$ratingsQuantity' },
             avgRating: { $avg: '$ratingsAverage' },
             avgPrice: { $avg: '$price' },
             minPrice: { $min: '$price' },
@@ -110,19 +104,59 @@ class TourController {
           },
         },
         {
-          $sort: { avgPrice: 1}
-        }
+          $sort: { avgPrice: 1 },
+        },
       ]);
       res.status(200).json({
         data: {
-          stats
+          stats,
         },
         success: true,
       });
-    } catch (error: any) {
-      return next(new ApplicationError(error.message));
     }
-  }
+  );
+
+  getMonthlyplan = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const year = Number(req.params.year);
+      const plan = await Tour.aggregate([
+        {
+          $unwind: '$startDates',
+        },
+        {
+          $match: {
+            startDates: {
+              $gte: new Date(`${year}-01-01`),
+              $lte: new Date(`${year}-12-31`),
+            },
+          },
+        },
+        {
+          $group: {
+            _id: { $month: '$startDates' },
+            numTourStarts: { $sum: 1 },
+            tours: { $push: '$name' },
+          },
+        },
+        {
+          $addFields: { month: '$_id' },
+        },
+        {
+          $project: { _id: 0 },
+        },
+        {
+          $sort: { numTourStarts: -1 },
+        },
+      ]);
+
+      res.status(200).json({
+        data: {
+          plan,
+        },
+        success: true,
+      });
+    }
+  );
 }
 
 export default new TourController();

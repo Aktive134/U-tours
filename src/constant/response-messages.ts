@@ -1,7 +1,7 @@
 const responses = {
     serverUp: "App is up and running on Configured port 5000",
     apiHealth: "App is Healthy and Running good",
-    serverError: "ERROR 500 : INTERNAL SERVER ERROR",
+    serverError: "ERROR 500 : SOMETHING WENT WRONG",
     userExist: "User already exists",
     userCreated: "User added successfully",
     tourCreated: "Tour Created",

@@ -1,13 +1,22 @@
 import { Response } from "express";
 
-export interface IBody{
+export interface IBodyDev{
     statusCode: number;
     message: string | any;
     data: string | number | Record<string,any>[] | Record<string,any>;
-    status : boolean
+    error: string | any;
+    stack: string | any;
+    status : string
 }
 
-const response = (res: Response, body: IBody) => {
+export interface IBodyProd{
+    statusCode: number;
+    message: string | any;
+    data: string | number | Record<string,any>[] | Record<string,any>;
+    status : string
+}
+
+const response = (res: Response, body: IBodyDev | IBodyProd) => {
     return res.status(body.statusCode).json(body);
 };
 
